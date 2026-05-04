@@ -99,5 +99,11 @@ async def health():
 
 # ── Router Registration ─────────────────────────────────────────
 from app.domains.market.routes import router as market_router
+from app.domains.scoring.routes import router as scoring_router
+from app.domains.backtest.routes import router as backtest_router
+from app.domains.pipeline.routes import router as pipeline_router
 
 app.include_router(market_router, prefix="/api/market", tags=["Marché"])
+app.include_router(scoring_router, prefix="/api/scoring", tags=["Scoring"])
+app.include_router(backtest_router, prefix="/api/backtest", tags=["Backtest"])
+app.include_router(pipeline_router, prefix="/api/pipeline", tags=["Pipeline"])
