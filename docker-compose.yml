@@ -1,0 +1,137 @@
+# CasaQuant Unified — Docker Compose (Desktop Local / VPS)
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cq_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://cq:cq_secret@db:5432/casaquant}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+      - CASAQUANT_ENV=${CASAQUANT_ENV:-production}
+      - API_KEY=${API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - ./data:/app/data
+      - ./app/static:/app/app/static:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ollama:
+        condition: service_started
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers 1
+      --loop uvloop
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cq_worker
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://cq:cq_secret@db:5432/casaquant}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+      - CASAQUANT_ENV=${CASAQUANT_ENV:-production}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: >
+      celery -A app.domains.scraping.tasks worker
+      -l info
+      -Q scraping,backtest,recalc,default
+      -n worker@%h
+      --concurrency=2
+    restart: unless-stopped
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cq_beat
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://cq:cq_secret@db:5432/casaquant}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CASAQUANT_ENV=${CASAQUANT_ENV:-production}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      redis:
+        condition: service_started
+    command: >
+      celery -A app.domains.scraping.tasks beat
+      -l info
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: cq_db
+    environment:
+      POSTGRES_USER: cq
+      POSTGRES_PASSWORD: cq_secret
+      POSTGRES_DB: casaquant
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cq -d casaquant"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cq_redis
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: cq_ollama
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    # Décommenter pour GPU (nvidia-docker)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  pgdata:
+  redisdata:
+  ollama_models:
