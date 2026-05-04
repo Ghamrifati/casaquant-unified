@@ -60,7 +60,7 @@ class ResultatTransaction:
     montant_encaisse: float     # 0 si achat, sinon brut - frais - impôt PV
 
 
-def _calculer_frais_decimal(montant_brut: Decimal) -> FraisBVC:
+def calculer_frais_decimal(montant_brut: Decimal) -> FraisBVC:
     commission_courtage = max(montant_brut * TAUX_COURTAGE, MIN_COURTAGE)
     impot_bourse = montant_brut * TAUX_IMPOT_BOURSE
     tva = commission_courtage * TAUX_TVA
@@ -78,7 +78,7 @@ def calculer_achat(quantite: int, prix_unitaire: float) -> ResultatTransaction:
     qte = _to_dec(quantite)
     pu = _to_dec(prix_unitaire)
     prix_brut_dec = _q4(qte * pu)
-    frais = _calculer_frais_decimal(prix_brut_dec)
+    frais = calculer_frais_decimal(prix_brut_dec)
     montant_net_dec = _q4(prix_brut_dec + _to_dec(frais.total_frais))
     return ResultatTransaction(
         prix_brut=float(prix_brut_dec),
@@ -97,7 +97,7 @@ def calculer_vente(quantite: int, prix_unitaire: float, cmp: float) -> ResultatT
     pu = _to_dec(prix_unitaire)
     cmp_dec = _to_dec(cmp)
     prix_brut_dec = _q4(qte * pu)
-    frais = _calculer_frais_decimal(prix_brut_dec)
+    frais = calculer_frais_decimal(prix_brut_dec)
     plus_value_brute_dec = _q4((pu - cmp_dec) * qte)
     impot_pv_dec = (
         _q4(plus_value_brute_dec * TAUX_IMPOT_PV)
