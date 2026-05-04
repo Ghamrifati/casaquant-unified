@@ -209,7 +209,9 @@ def pillar_value(indicators: dict[str, Any], jv: dict[str, Any] | None) -> float
     """
     pts = 0.0
 
-    if jv:
+    if jv is None:
+        pts += 5.0  # neutral base when no fair value available
+    elif jv:
         prix = indicators.get("prix_dernier")
         fv = jv.get("fair_value_mad")
         if prix and fv and prix > 0:

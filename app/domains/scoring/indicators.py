@@ -29,6 +29,7 @@ def compute_rsi(series: pd.Series, length: int = 14) -> pd.Series:
     rsi = 100 - (100 / (1 + rs))
     rsi = rsi.mask((avg_loss == 0) & (avg_gain > 0), 100.0)
     rsi = rsi.mask((avg_gain == 0) & (avg_loss > 0), 0.0)
+    rsi = rsi.mask((avg_gain == 0) & (avg_loss == 0), 50.0)
     rsi.iloc[:length] = np.nan
     return rsi
 
