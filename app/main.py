@@ -97,23 +97,7 @@ async def health():
     }
 
 
-# ── Router Registration (Phase 2) ───────────────────────────────
-# from app.domains.market.routes import router as market_router
-# from app.domains.scoring.routes import router as scoring_router
-# from app.domains.portfolio.routes import router as portfolio_router
-# from app.domains.backtest.routes import router as backtest_router
-# from app.domains.ai.routes import router as ai_router
-# from app.domains.screener.routes import router as screener_router
-# from app.domains.alerts.routes import router as alerts_router
-# from app.domains.imports.routes import router as imports_router
-# from app.domains.exports.routes import router as exports_router
+# ── Router Registration ─────────────────────────────────────────
+from app.domains.market.routes import router as market_router
 
-# app.include_router(market_router, prefix="/api/market", tags=["Marché"])
-# app.include_router(scoring_router, prefix="/api/scoring", tags=["Scoring"])
-# app.include_router(portfolio_router, prefix="/api/portfolio", tags=["Portfolio"])
-# app.include_router(backtest_router, prefix="/api/backtest", tags=["Backtest"])
-# app.include_router(ai_router, prefix="/api/ia", tags=["IA"])
-# app.include_router(screener_router, prefix="/api/screener", tags=["Screener"])
-# app.include_router(alerts_router, prefix="/api/alerts", tags=["Alertes"])
-# app.include_router(imports_router, prefix="/api/import", tags=["Import"])
-# app.include_router(exports_router, prefix="/api/export", tags=["Export"])
+app.include_router(market_router, prefix="/api/market", tags=["Marché"])
